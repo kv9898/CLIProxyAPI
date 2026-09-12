@@ -25,6 +25,9 @@ type AccessProvider struct {
 }
 
 const (
+	// ScopedAuthMetadataKey is trusted authentication metadata, never a client header.
+	ScopedAuthMetadataKey = "scoped_auth_id"
+
 	// AccessProviderTypeConfigAPIKey is the built-in provider validating inline API keys.
 	AccessProviderTypeConfigAPIKey = "config-api-key"
 

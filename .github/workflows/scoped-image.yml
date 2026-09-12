@@ -1,0 +1,43 @@
+name: Scoped proxy image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version tag for the maintained fork
+        required: true
+        default: 7.2.158-school.1
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify scoped authentication and account isolation
+        run: go test ./internal/access/config_access ./internal/api ./sdk/api/handlers -run TestScopedKey -count=1
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}
+          build-args: |
+            VERSION=${{ inputs.version }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.run_id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

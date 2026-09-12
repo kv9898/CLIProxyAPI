@@ -171,6 +171,13 @@ func accessAuthMiddleware(manager *sdkaccess.Manager, realtimeError bool) gin.Ha
 				if len(result.Metadata) > 0 {
 					c.Set("accessMetadata", result.Metadata)
 				}
+				if result.Metadata[sdkaccess.ScopedAuthMetadataKey] != "" && !scopedClientRouteAllowed(c.Request) {
+					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{
+						"message": "This API key is restricted to its assigned account's text API endpoints.",
+						"type":    "permission_error", "code": "scoped_key_endpoint_denied",
+					}})
+					return
+				}
 			}
 			c.Next()
 			return
@@ -197,6 +204,24 @@ func accessAuthMiddleware(manager *sdkaccess.Manager, realtimeError bool) gin.Ha
 		}
 		c.AbortWithStatusJSON(statusCode, gin.H{"error": err.Message})
 	}
+}
+
+// Only audited routes that use BaseAPIHandler's scoped execution metadata are enabled.
+// In particular, direct HTTP, media, realtime and Amp routes must not bypass the scope.
+func scopedClientRouteAllowed(r *http.Request) bool {
+	if r == nil || r.URL == nil {
+		return false
+	}
+	switch r.Method {
+	case http.MethodGet:
+		return r.URL.Path == "/v1/models" || r.URL.Path == "/v1/responses" || r.URL.Path == "/backend-api/codex/responses"
+	case http.MethodPost:
+		switch r.URL.Path {
+		case "/v1/responses", "/v1/responses/compact", "/v1/chat/completions", "/v1/completions", "/v1/messages", "/v1/messages/count_tokens", "/backend-api/codex/responses", "/backend-api/codex/responses/compact":
+			return true
+		}
+	}
+	return false
 }
 
 func realtimeAuthMiddleware(manager *sdkaccess.Manager, handler *codexlive.Handler) gin.HandlerFunc {

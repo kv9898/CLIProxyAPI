@@ -660,6 +660,14 @@ func (h *BaseAPIHandler) WriteModelListResponse(c *gin.Context, sourceFormat str
 		lifecycle.complete(pluginapi.RequestCompletionSucceeded, http.StatusOK, nil)
 	}
 
+	if scopedAuthID := scopedAuthIDFromGin(c); scopedAuthID != "" {
+		var errScope error
+		body, errScope = filterScopedModelList(body, scopedAuthID)
+		if errScope != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to produce scoped model list"})
+			return
+		}
+	}
 	if c.Writer.Header().Get("Content-Type") == "" {
 		c.Header("Content-Type", "application/json; charset=utf-8")
 	}

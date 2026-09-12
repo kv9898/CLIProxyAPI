@@ -220,6 +220,11 @@ func requestExecutionMetadata(ctx context.Context) map[string]any {
 	if pinnedAuthID := pinnedAuthIDFromContext(ctx); pinnedAuthID != "" {
 		meta[coreexecutor.PinnedAuthMetadataKey] = pinnedAuthID
 	}
+	// Authentication scope outranks websocket/session pins and survives their reset
+	// during retries. The scheduler already filters every candidate by this exact ID.
+	if scopedAuthID := scopedAuthIDFromGin(ginCtx); scopedAuthID != "" {
+		meta[coreexecutor.PinnedAuthMetadataKey] = scopedAuthID
+	}
 	if selectedCallback := selectedAuthIDCallbackFromContext(ctx); selectedCallback != nil {
 		meta[coreexecutor.SelectedAuthCallbackMetadataKey] = selectedCallback
 	}

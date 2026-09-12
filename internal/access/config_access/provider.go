@@ -2,6 +2,8 @@ package configaccess
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"strings"
 
@@ -17,20 +19,30 @@ func Register(cfg *sdkconfig.SDKConfig) {
 	}
 
 	keys := normalizeKeys(cfg.APIKeys)
-	if len(keys) == 0 {
+	if len(keys) == 0 && len(cfg.ScopedAPIKeys) == 0 {
 		sdkaccess.UnregisterProvider(sdkaccess.AccessProviderTypeConfigAPIKey)
 		return
 	}
 
+	p := newProvider(sdkaccess.DefaultAccessProviderName, keys)
+	p.scopes = make(map[string]string, len(cfg.ScopedAPIKeys))
+	for digest, authID := range cfg.ScopedAPIKeys {
+		digest = strings.ToLower(strings.TrimSpace(digest))
+		decoded, errDecode := hex.DecodeString(digest)
+		if errDecode == nil && len(decoded) == sha256.Size {
+			p.scopes[digest] = strings.TrimSpace(authID)
+		}
+	}
 	sdkaccess.RegisterProvider(
 		sdkaccess.AccessProviderTypeConfigAPIKey,
-		newProvider(sdkaccess.DefaultAccessProviderName, keys),
+		p,
 	)
 }
 
 type provider struct {
-	name string
-	keys map[string]struct{}
+	name   string
+	keys   map[string]struct{}
+	scopes map[string]string
 }
 
 func newProvider(name string, keys []string) *provider {
@@ -56,7 +68,7 @@ func (p *provider) Authenticate(_ context.Context, r *http.Request) (*sdkaccess.
 	if p == nil {
 		return nil, sdkaccess.NewNotHandledError()
 	}
-	if len(p.keys) == 0 {
+	if len(p.keys) == 0 && len(p.scopes) == 0 {
 		return nil, sdkaccess.NewNotHandledError()
 	}
 	authHeader := r.Header.Get("Authorization")
@@ -85,6 +97,22 @@ func (p *provider) Authenticate(_ context.Context, r *http.Request) (*sdkaccess.
 		{queryAuthToken, "query-auth-token"},
 	}
 
+	// A scoped credential takes precedence even if multiple auth channels are supplied.
+	for _, candidate := range candidates {
+		if candidate.value == "" {
+			continue
+		}
+		digest := sha256.Sum256([]byte(candidate.value))
+		if authID, ok := p.scopes[hex.EncodeToString(digest[:])]; ok {
+			if authID == "" {
+				return nil, sdkaccess.NewInvalidCredentialError()
+			}
+			return &sdkaccess.Result{
+				Provider: p.Identifier(), Principal: candidate.value,
+				Metadata: map[string]string{"source": candidate.source, sdkaccess.ScopedAuthMetadataKey: authID},
+			}, nil
+		}
+	}
 	for _, candidate := range candidates {
 		if candidate.value == "" {
 			continue

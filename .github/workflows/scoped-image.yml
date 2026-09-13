@@ -17,6 +17,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout matching management UI
+        uses: actions/checkout@v4
+        with:
+          repository: kv9898/Cli-Proxy-API-Management-Center
+          ref: 0cda75a980eb2d43b217396b2b8e1cdd1d777d0b
+          path: management-ui
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+      - name: Verify and build matching management UI
+        working-directory: management-ui
+        run: bun install --frozen-lockfile && bun run verify
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -30,14 +46,46 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
+        id: api
         with:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}
+          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}-api
           build-args: |
             VERSION=${{ inputs.version }}
             COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.run_id }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Publish paired API and UI image
+        uses: docker/build-push-action@v6
+        id: paired
+        with:
+          context: .
+          file: Dockerfile.panel
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}
+          build-args: |
+            API_IMAGE=ghcr.io/kv9898/cliproxyapi@${{ steps.api.outputs.digest }}
+      - name: Fetch and verify rollback UI
+        run: |
+          curl --fail --location --retry 3 https://github.com/kv9898/CLIProxyAPI/releases/download/rollback-ui-20260913/management-before.html --output rollback-management.html
+          echo '054c8efc16a3b422ab3515d44e5c8d5034247231096fb8f362af72e0572c5260  rollback-management.html' | sha256sum --check
+      - name: Publish paired rollback image
+        uses: docker/build-push-action@v6
+        id: rollback
+        with:
+          context: .
+          file: Dockerfile.panel
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/kv9898/cliproxyapi:7.2.158-school.1-rollback-20260913
+          build-args: |
+            API_IMAGE=ghcr.io/kv9898/cliproxyapi@sha256:363601e8e21db854f9cf578040ea8a318ba546e00d63e17e7af923aa10040d54
+            PANEL_FILE=rollback-management.html
+      - name: Record immutable deployment references
+        run: |
+          echo 'New image: ghcr.io/kv9898/cliproxyapi@${{ steps.paired.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Rollback image: ghcr.io/kv9898/cliproxyapi@${{ steps.rollback.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"

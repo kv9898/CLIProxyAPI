@@ -1,0 +1,7 @@
+# Pair an immutable API image with a verified single-file management UI.
+# Deployment configuration must set remote-management.disable-auto-update-panel: true.
+ARG API_IMAGE
+FROM ${API_IMAGE}
+ARG PANEL_FILE=management-ui/dist/index.html
+COPY ${PANEL_FILE} /CLIProxyAPI/static/management.html
+ENV MANAGEMENT_STATIC_PATH=/CLIProxyAPI/static

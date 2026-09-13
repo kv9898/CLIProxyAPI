@@ -1,6 +1,8 @@
 # Git and GitHub folders
 .git
 .github
+management-ui/.git
+management-ui/node_modules
 
 # Docker and CI/CD related files
 docker-compose.yml

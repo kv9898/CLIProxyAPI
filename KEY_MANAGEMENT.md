@@ -66,18 +66,20 @@ limits, persistent statistics, or Codex `/status` budget integration.
 ## Build and rollout
 
 1. Run backend tests and build; build the matching UI using `bun run verify`.
-2. Publish the UI fork's single-file `dist/index.html` as `management.html`
-   using its existing release workflow. Build the API image with the maintained
-   `Scoped proxy image` workflow (default version `7.2.158-keys.1`).
-3. When deployment is approved, update the saved configuration's
-   `remote-management.panel-github-repository` to
-   `https://github.com/kv9898/Cli-Proxy-API-Management-Center`, deploy the API
-   image, and verify the portal uses the matching UI release.
+2. Build with the maintained `Scoped proxy image` workflow (default version
+   `7.2.158-keys.1`). It checks out a pinned UI commit, verifies/builds it, and
+   publishes paired new and rollback images using `Dockerfile.panel`.
+3. When deployment is approved, set the saved configuration's
+   `remote-management.disable-auto-update-panel: true`, then deploy the paired
+   image by digest. It includes `management.html` and sets MANAGEMENT_STATIC_PATH.
+   Do not select the intermediate `-api` image. No panel repository change is needed.
 4. Check both unrestricted keys' model lists and the school's model list;
    confirm the school key still denies Pro-only and both DeepSeek profiles.
    Make one small school request and verify its counter increments.
 
 Keep API and UI releases paired. Do not auto-update from the upstream UI repo.
+The preparation workflow's rollback parent, UI URL/checksum, and tag are specific
+to the 2026-09-13 baseline; update them when preparing a later rollback baseline.
 To roll back after keys have been edited, restore the prior key configuration
 and the prior API/UI versions together. Older API versions do not understand
 `client-keys` and could otherwise disable authentication if no legacy keys remain.

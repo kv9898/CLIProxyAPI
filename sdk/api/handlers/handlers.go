@@ -225,6 +225,9 @@ func requestExecutionMetadata(ctx context.Context) map[string]any {
 	if scopedAuthID := scopedAuthIDFromGin(ginCtx); scopedAuthID != "" {
 		meta[coreexecutor.PinnedAuthMetadataKey] = scopedAuthID
 	}
+	if ids, restricted := allowedAuthIDsFromGin(ginCtx); restricted {
+		meta[coreexecutor.AllowedAuthIDsMetadataKey] = ids
+	}
 	if selectedCallback := selectedAuthIDCallbackFromContext(ctx); selectedCallback != nil {
 		meta[coreexecutor.SelectedAuthCallbackMetadataKey] = selectedCallback
 	}

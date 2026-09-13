@@ -3,6 +3,7 @@ package redisqueue
 import (
 	"context"
 	"encoding/json"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/clientkeys"
 	"net/http"
 	"strings"
 	"time"
@@ -22,7 +23,11 @@ func (p *usageQueuePlugin) HandleUsage(ctx context.Context, record coreusage.Rec
 	if p == nil {
 		return
 	}
-	if !Enabled() || !UsageStatisticsEnabled() {
+	if !UsageStatisticsEnabled() {
+		return
+	}
+	clientkeys.Default.Record(record)
+	if !Enabled() {
 		return
 	}
 

@@ -21,12 +21,35 @@ func scopedAuthIDFromGin(c *gin.Context) string {
 	return metadata[sdkaccess.ScopedAuthMetadataKey]
 }
 
+func allowedAuthIDsFromGin(c *gin.Context) ([]string, bool) {
+	if c == nil {
+		return nil, false
+	}
+	value, _ := c.Get("accessMetadata")
+	metadata, _ := value.(map[string]string)
+	if raw, ok := metadata[sdkaccess.AllowedAuthMetadataKey]; ok {
+		var ids []string
+		_ = json.Unmarshal([]byte(raw), &ids)
+		return ids, true
+	}
+	if id := scopedAuthIDFromGin(c); id != "" {
+		return []string{id}, true
+	}
+	return nil, false
+}
+
 // Preserve both OpenAI and Codex catalog shapes, including model capabilities.
 func filterScopedModelList(body []byte, authID string) ([]byte, error) {
+	return filterAllowedModelList(body, []string{authID})
+}
+
+func filterAllowedModelList(body []byte, authIDs []string) ([]byte, error) {
 	allowed := make(map[string]bool)
-	for _, model := range registry.GetGlobalRegistry().GetModelsForClient(authID) {
-		if model != nil {
-			allowed[model.ID] = true
+	for _, authID := range authIDs {
+		for _, model := range registry.GetGlobalRegistry().GetModelsForClient(authID) {
+			if model != nil {
+				allowed[model.ID] = true
+			}
 		}
 	}
 	var payload map[string]json.RawMessage

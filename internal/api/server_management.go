@@ -77,6 +77,10 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.POST("/reset-quota", s.mgmt.ResetQuota)
 
 		mgmt.GET("/api-keys", s.mgmt.GetAPIKeys)
+		mgmt.GET("/client-keys", s.mgmt.GetClientKeys)
+		mgmt.POST("/client-keys", s.mgmt.PutClientKey)
+		mgmt.PUT("/client-keys/:id", s.mgmt.PutClientKey)
+		mgmt.DELETE("/client-keys/:id", s.mgmt.DeleteClientKey)
 		mgmt.PUT("/api-keys", s.mgmt.PutAPIKeys)
 		mgmt.PATCH("/api-keys", s.mgmt.PatchAPIKeys)
 		mgmt.DELETE("/api-keys", s.mgmt.DeleteAPIKeys)

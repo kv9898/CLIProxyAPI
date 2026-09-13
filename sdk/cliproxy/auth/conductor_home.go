@@ -945,6 +945,10 @@ func (m *Manager) pickNextViaHome(ctx context.Context, model string, opts clipro
 }
 
 func (m *Manager) pickHomeDispatchSelection(ctx context.Context, model string, opts cliproxyexecutor.Options) (*HomeDispatchSelection, error) {
+	// Remote dispatch cannot enforce a local credential allowlist. Fail closed.
+	if _, restricted := opts.Metadata[cliproxyexecutor.AllowedAuthIDsMetadataKey]; restricted {
+		return nil, &Error{Code: "permission_denied", Message: "restricted client keys require local credential selection", HTTPStatus: 403}
+	}
 	if m == nil {
 		return nil, &Error{Code: "auth_not_found", Message: "no auth available"}
 	}

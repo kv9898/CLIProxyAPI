@@ -25,6 +25,7 @@ type AccessProvider struct {
 }
 
 const (
+	AllowedAuthMetadataKey = "client_allowed_auth_ids"
 	// ScopedAuthMetadataKey is trusted authentication metadata, never a client header.
 	ScopedAuthMetadataKey = "scoped_auth_id"
 

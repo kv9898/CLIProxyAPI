@@ -32,6 +32,23 @@ func TestScopedKeyOverridesSessionPins(t *testing.T) {
 	}
 }
 
+func TestManagedKeyCatalogUnionAndEmptySelection(t *testing.T) {
+	r := registry.GetGlobalRegistry()
+	r.RegisterClient("catalog-school", "codex", []*registry.ModelInfo{{ID: "school"}})
+	r.RegisterClient("catalog-ds", "deepseek", []*registry.ModelInfo{{ID: "deepseek"}})
+	defer r.UnregisterClient("catalog-school")
+	defer r.UnregisterClient("catalog-ds")
+	body := []byte(`{"data":[{"id":"school"},{"id":"deepseek"},{"id":"pro"}]}`)
+	out, err := filterAllowedModelList(body, []string{"catalog-school", "catalog-ds"})
+	if err != nil || strings.Contains(string(out), `"pro"`) || !strings.Contains(string(out), `"deepseek"`) || !strings.Contains(string(out), `"school"`) {
+		t.Fatalf("invalid union: %s %v", out, err)
+	}
+	out, err = filterAllowedModelList(body, nil)
+	if err != nil || string(out) != `{"data":[]}` {
+		t.Fatalf("empty selection exposed models: %s", out)
+	}
+}
+
 type scopedExecutor struct {
 	provider string
 	calls    []string
@@ -68,6 +85,20 @@ func (e *scopedExecutor) HttpRequest(context.Context, *coreauth.Auth, *http.Requ
 }
 
 func TestScopedKeyExecutionIsolation(t *testing.T) {
+	testKeyExecutionIsolation(t, schoolContext)
+}
+
+func TestManagedKeyExecutionIsolation(t *testing.T) {
+	testKeyExecutionIsolation(t, func() context.Context {
+		ctx := schoolContext()
+		c := ctx.Value("gin").(*gin.Context)
+		// Multiple allowed IDs, including a missing one; no legacy pin fallback.
+		c.Set("accessMetadata", map[string]string{sdkaccess.AllowedAuthMetadataKey: `["scoped-school","missing"]`})
+		return ctx
+	})
+}
+
+func testKeyExecutionIsolation(t *testing.T, requestContext func() context.Context) {
 	for _, mode := range []string{"success", "quota", "stream-failure", "missing", "disabled", "deepseek", "deepseek-old"} {
 		t.Run(mode, func(t *testing.T) {
 			manager := coreauth.NewManager(nil, nil, nil)
@@ -97,7 +128,11 @@ func TestScopedKeyExecutionIsolation(t *testing.T) {
 				t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(a.ID) })
 			}
 			h := NewBaseAPIHandlers(&sdkconfig.SDKConfig{Streaming: sdkconfig.StreamingConfig{BootstrapRetries: 2}}, manager)
-			ctx := WithPinnedAuthID(schoolContext(), "scoped-pro")
+			ctx := requestContext()
+			// A stale/disallowed session pin must not expand the credential allowlist.
+			if scopedAuthIDFromGin(ctx.Value("gin").(*gin.Context)) != "" {
+				ctx = WithPinnedAuthID(ctx, "scoped-pro")
+			}
 			model := "scoped-shared"
 			if strings.HasPrefix(mode, "deepseek") {
 				model = mode + "-only"

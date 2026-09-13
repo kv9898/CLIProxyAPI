@@ -6,6 +6,8 @@ package config
 
 // SDKConfig represents the application's configuration, loaded from a YAML file.
 type SDKConfig struct {
+	// ClientKeys stores hash-only managed client credentials. Empty selections deny all access.
+	ClientKeys map[string]ClientKeyPolicy `yaml:"client-keys,omitempty" json:"client-keys,omitempty"`
 	// ProxyURL is the URL of an optional proxy server to use for outbound requests.
 	ProxyURL string `yaml:"proxy-url" json:"proxy-url"`
 
@@ -68,6 +70,13 @@ type SDKConfig struct {
 	// NonStreamKeepAliveInterval controls how often blank lines are emitted for non-streaming responses.
 	// <= 0 disables keep-alives. Value is in seconds.
 	NonStreamKeepAliveInterval int `yaml:"nonstream-keepalive-interval,omitempty" json:"nonstream-keepalive-interval,omitempty"`
+}
+
+// ClientKeyPolicy grants either unrestricted access or an explicit set of runtime auth IDs.
+type ClientKeyPolicy struct {
+	Name    string   `yaml:"name" json:"name"`
+	All     bool     `yaml:"all" json:"all"`
+	AuthIDs []string `yaml:"auth-ids" json:"auth_ids"`
 }
 
 // ClaudeCodeConfig configures Claude Code compatibility behavior.

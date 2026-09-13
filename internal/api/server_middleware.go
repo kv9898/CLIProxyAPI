@@ -171,7 +171,7 @@ func accessAuthMiddleware(manager *sdkaccess.Manager, realtimeError bool) gin.Ha
 				if len(result.Metadata) > 0 {
 					c.Set("accessMetadata", result.Metadata)
 				}
-				if result.Metadata[sdkaccess.ScopedAuthMetadataKey] != "" && !scopedClientRouteAllowed(c.Request) {
+				if (result.Metadata[sdkaccess.ScopedAuthMetadataKey] != "" || result.Metadata[sdkaccess.AllowedAuthMetadataKey] != "") && !scopedClientRouteAllowed(c.Request) {
 					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{
 						"message": "This API key is restricted to its assigned account's text API endpoints.",
 						"type":    "permission_error", "code": "scoped_key_endpoint_denied",

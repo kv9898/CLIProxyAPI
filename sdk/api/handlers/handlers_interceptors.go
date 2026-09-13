@@ -660,9 +660,9 @@ func (h *BaseAPIHandler) WriteModelListResponse(c *gin.Context, sourceFormat str
 		lifecycle.complete(pluginapi.RequestCompletionSucceeded, http.StatusOK, nil)
 	}
 
-	if scopedAuthID := scopedAuthIDFromGin(c); scopedAuthID != "" {
+	if ids, restricted := allowedAuthIDsFromGin(c); restricted {
 		var errScope error
-		body, errScope = filterScopedModelList(body, scopedAuthID)
+		body, errScope = filterAllowedModelList(body, ids)
 		if errScope != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to produce scoped model list"})
 			return

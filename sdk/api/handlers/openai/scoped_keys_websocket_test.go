@@ -18,6 +18,14 @@ import (
 )
 
 func TestScopedKeyWebsocketCannotSwitchAccounts(t *testing.T) {
+	testKeyWebsocketIsolation(t, map[string]string{sdkaccess.ScopedAuthMetadataKey: "ws-school"})
+}
+
+func TestManagedKeyWebsocketCannotSwitchAccounts(t *testing.T) {
+	testKeyWebsocketIsolation(t, map[string]string{sdkaccess.AllowedAuthMetadataKey: `["ws-school"]`})
+}
+
+func testKeyWebsocketIsolation(t *testing.T, metadata map[string]string) {
 	codex := &websocketDirectCaptureExecutor{provider: "codex"}
 	ds := &websocketDirectCaptureExecutor{provider: "deepseek"}
 	old := &websocketDirectCaptureExecutor{provider: "deepseek-old"}
@@ -39,7 +47,7 @@ func TestScopedKeyWebsocketCannotSwitchAccounts(t *testing.T) {
 	h := NewOpenAIResponsesAPIHandler(handlers.NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, manager))
 	router := gin.New()
 	router.GET("/v1/responses", func(c *gin.Context) {
-		c.Set("accessMetadata", map[string]string{sdkaccess.ScopedAuthMetadataKey: "ws-school"})
+		c.Set("accessMetadata", metadata)
 		c.Next()
 	}, h.ResponsesWebsocket)
 	server := httptest.NewServer(router)

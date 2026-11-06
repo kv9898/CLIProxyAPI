@@ -4,6 +4,7 @@ set -euo pipefail
 image=$1
 here=$(cd "$(dirname "$0")" && pwd)
 name="ai-api-smoke-$$"
+# shellcheck disable=SC2329 # Invoked by the EXIT trap.
 cleanup() {
   result=$?
   if (( result != 0 )); then docker logs --tail 60 "$name" >&2 || true; fi

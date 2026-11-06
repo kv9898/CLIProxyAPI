@@ -2,6 +2,7 @@
 # Run on the approved Always Free VM, not on the operator's computer.
 set -euo pipefail
 [[ $EUID -eq 0 ]] || { echo 'Run with sudo on the Oracle VM.' >&2; exit 1; }
+# shellcheck source=/dev/null
 source /etc/os-release
 [[ $ID == ubuntu && $VERSION_ID == 24.04 && $(uname -m) == aarch64 ]] || {
   echo 'Expected Ubuntu 24.04 on Arm64; refusing to alter this host.' >&2; exit 1;

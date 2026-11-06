@@ -11,7 +11,7 @@ docker run -d --name "$name" -p 127.0.0.1::8317 \
 address=$(docker port "$name" 8317/tcp)
 url="http://$address"
 ready=false
-for attempt in {1..30}; do
+for _attempt in {1..30}; do
   if curl -fsS --max-time 5 "$url/healthz" >/dev/null 2>&1; then ready=true; break; fi
   sleep 2
 done
@@ -22,7 +22,7 @@ curl -fsS --max-time 10 -H 'Authorization: Bearer synthetic-only-unrestricted-te
 curl -fsS --max-time 10 -H 'Authorization: Bearer synthetic-only-management-test-key' "$url/v0/management/client-keys" >/dev/null
 curl -fsS --max-time 10 "$url/management.html" >/dev/null
 docker restart "$name" >/dev/null
-for attempt in {1..30}; do
+for _attempt in {1..30}; do
   if curl -fsS --max-time 5 "$url/healthz" >/dev/null 2>&1; then
     echo 'Paired image passed synthetic HTTP, management, panel and restart checks.'
     exit 0

@@ -30,7 +30,7 @@ docker compose pull
 docker compose run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile
 docker compose up -d --wait --wait-timeout 120
 # Do not set timeouts on model inference streams; this is a readiness probe only.
-for attempt in {1..30}; do
+for _attempt in {1..30}; do
   if curl --fail --silent --max-time 5 http://127.0.0.1:8317/healthz >/dev/null; then
     echo 'Proxy health endpoint ready. Run authentication and isolation acceptance checks.'
     exit 0

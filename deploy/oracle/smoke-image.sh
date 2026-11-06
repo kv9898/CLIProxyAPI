@@ -4,7 +4,12 @@ set -euo pipefail
 image=$1
 here=$(cd "$(dirname "$0")" && pwd)
 name="ai-api-smoke-$$"
-trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+cleanup() {
+  result=$?
+  if (( result != 0 )); then docker logs --tail 60 "$name" >&2 || true; fi
+  docker rm -f "$name" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 docker run -d --name "$name" -p 127.0.0.1::8317 \
   -v "$here/synthetic.yaml:/run/synthetic.yaml:ro" \
   "$image" /CLIProxyAPI/CLIProxyAPI --config /run/synthetic.yaml >/dev/null
@@ -22,6 +27,8 @@ curl -fsS --max-time 10 -H 'Authorization: Bearer synthetic-only-unrestricted-te
 curl -fsS --max-time 10 -H 'Authorization: Bearer synthetic-only-management-test-key' "$url/v0/management/client-keys" >/dev/null
 curl -fsS --max-time 10 "$url/management.html" >/dev/null
 docker restart "$name" >/dev/null
+address=$(docker port "$name" 8317/tcp)
+url="http://$address"
 for _attempt in {1..30}; do
   if curl -fsS --max-time 5 "$url/healthz" >/dev/null 2>&1; then
     echo 'Paired image passed synthetic HTTP, management, panel and restart checks.'
@@ -29,4 +36,5 @@ for _attempt in {1..30}; do
   fi
   sleep 2
 done
+echo "Synthetic server did not recover after restart." >&2
 exit 1

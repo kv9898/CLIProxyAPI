@@ -1,0 +1,7 @@
+[Unit]
+Description=Check AI-API health, storage and certificate expiry
+After=docker.service
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ai-api
+ExecStart=/opt/ai-api/check.sh

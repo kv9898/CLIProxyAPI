@@ -1,0 +1,13 @@
+# Deliberately public test values. Never use this configuration for real traffic.
+host: 0.0.0.0
+port: 8317
+auth-dir: /tmp/synthetic-auths
+api-keys:
+  - synthetic-only-unrestricted-test-key
+remote-management:
+  allow-remote: true
+  secret-key: synthetic-only-management-test-key
+  disable-auto-update-panel: true
+logging-to-file: false
+request-log: false
+usage-statistics-enabled: true

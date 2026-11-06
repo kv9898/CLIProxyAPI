@@ -1,0 +1,7 @@
+ai.rubuky.com {
+	tls /certs/origin.pem /certs/origin.key
+	header -Server
+	reverse_proxy proxy:8317 {
+		flush_interval -1
+	}
+}

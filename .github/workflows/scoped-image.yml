@@ -12,10 +12,27 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: scoped-image-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ inputs.version }}
     steps:
+      - name: Validate release version
+        shell: bash
+        run: '[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-keys\.[0-9]+$ ]]'
       - uses: actions/checkout@v4
       - name: Checkout matching management UI
         uses: actions/checkout@v4
@@ -50,14 +67,14 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64
-          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}-api
+          platforms: linux/${{ matrix.arch }}
+          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}-api-${{ matrix.arch }}
           build-args: |
             VERSION=${{ inputs.version }}
             COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=scoped-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=scoped-${{ matrix.arch }}
       - name: Publish paired API and UI image
         uses: docker/build-push-action@v6
         id: paired
@@ -65,27 +82,60 @@ jobs:
           context: .
           file: Dockerfile.panel
           push: true
-          platforms: linux/amd64
-          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}
+          platforms: linux/${{ matrix.arch }}
+          tags: ghcr.io/kv9898/cliproxyapi:${{ inputs.version }}-${{ matrix.arch }}
           build-args: |
             API_IMAGE=ghcr.io/kv9898/cliproxyapi@${{ steps.api.outputs.digest }}
-      - name: Fetch and verify rollback UI
+      - name: Smoke-test native paired image
+        env:
+          PAIRED_DIGEST: ${{ steps.paired.outputs.digest }}
         run: |
-          curl --fail --location --retry 3 https://github.com/kv9898/CLIProxyAPI/releases/download/rollback-ui-20260913/management-before.html --output rollback-management.html
-          echo '054c8efc16a3b422ab3515d44e5c8d5034247231096fb8f362af72e0572c5260  rollback-management.html' | sha256sum --check
-      - name: Publish paired rollback image
-        uses: docker/build-push-action@v6
-        id: rollback
+          docker pull "ghcr.io/kv9898/cliproxyapi@$PAIRED_DIGEST"
+          bash deploy/oracle/smoke-image.sh "ghcr.io/kv9898/cliproxyapi@$PAIRED_DIGEST"
+      - name: Save immutable image references
+        env:
+          API_DIGEST: ${{ steps.api.outputs.digest }}
+          PAIRED_DIGEST: ${{ steps.paired.outputs.digest }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p references
+          jq -n --arg api "ghcr.io/kv9898/cliproxyapi@$API_DIGEST" --arg paired "ghcr.io/kv9898/cliproxyapi@$PAIRED_DIGEST" '{api:$api,paired:$paired}' > "references/$ARCH.json"
+      - uses: actions/upload-artifact@v4
         with:
-          context: .
-          file: Dockerfile.panel
-          push: true
-          platforms: linux/amd64
-          tags: ghcr.io/kv9898/cliproxyapi:7.2.158-school.1-rollback-20260913
-          build-args: |
-            API_IMAGE=ghcr.io/kv9898/cliproxyapi@sha256:363601e8e21db854f9cf578040ea8a318ba546e00d63e17e7af923aa10040d54
-            PANEL_FILE=rollback-management.html
-      - name: Record immutable deployment references
+          name: image-references-${{ matrix.arch }}
+          path: references/*.json
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-references-*
+          path: references
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish multi-platform manifests
+        shell: bash
         run: |
-          echo 'New image: ghcr.io/kv9898/cliproxyapi@${{ steps.paired.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Rollback image: ghcr.io/kv9898/cliproxyapi@${{ steps.rollback.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"
+          mapfile -t api < <(jq -r .api references/amd64.json references/arm64.json)
+          mapfile -t paired < <(jq -r .paired references/amd64.json references/arm64.json)
+          docker buildx imagetools create --tag "ghcr.io/kv9898/cliproxyapi:$VERSION-api" "${api[@]}"
+          docker buildx imagetools create --tag "ghcr.io/kv9898/cliproxyapi:$VERSION" "${paired[@]}"
+          docker buildx imagetools inspect --raw "ghcr.io/kv9898/cliproxyapi:$VERSION" | jq -e '[.manifests[].platform.architecture] | (index("amd64") != null and index("arm64") != null)'
+          docker buildx imagetools inspect "ghcr.io/kv9898/cliproxyapi:$VERSION" | tee release-manifest.txt
+          echo 'Deploy the paired image digest below; never deploy the intermediate API image.' >> "$GITHUB_STEP_SUMMARY"
+          cat release-manifest.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest
+          path: release-manifest.txt
+          retention-days: 90

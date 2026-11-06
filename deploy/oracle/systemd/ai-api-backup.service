@@ -1,0 +1,6 @@
+[Unit]
+Description=Encrypted AI-API backup to the operator computer
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/ai-api/backup.env
+ExecStart=/bin/bash %h/.local/lib/ai-api/backup.sh

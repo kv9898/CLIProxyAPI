@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily encrypted AI-API backup
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=15m
+[Install]
+WantedBy=timers.target

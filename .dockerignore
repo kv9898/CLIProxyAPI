@@ -41,3 +41,9 @@ bin
 .bmad
 _bmad
 _bmad-output
+
+# Host deployment state and secret material never belong in build contexts.
+deploy/oracle
+.env
+.env.*
+!.env.example

@@ -73,7 +73,9 @@ limits, persistent statistics, or Codex `/status` budget integration.
 1. Run backend tests and build; build the matching UI using `bun run verify`.
 2. Build with the maintained `Scoped proxy image` workflow (default version
    `8.0.58-keys.1`). It checks out a pinned UI commit, verifies/builds it, and
-   publishes paired new and rollback images using `Dockerfile.panel`.
+   publishes paired amd64/arm64 images using `Dockerfile.panel`. Keep the
+   existing deployment digest as the rollback reference; the workflow does not
+   rebuild or overwrite historical rollback tags.
 3. When deployment is approved, set the saved configuration's
    `remote-management.disable-auto-update-panel: true`, then deploy the paired
    image by digest. It includes `management.html` and sets MANAGEMENT_STATIC_PATH.
@@ -83,8 +85,8 @@ limits, persistent statistics, or Codex `/status` budget integration.
    Make one small school request and verify its counter increments.
 
 Keep API and UI releases paired. Do not auto-update from the upstream UI repo.
-The preparation workflow's rollback parent, UI URL/checksum, and tag are specific
-to the 2026-09-13 baseline; update them when preparing a later rollback baseline.
+Historical rollback images refer to the 2026-09-13 baseline. Record the current
+paired image digest and compatible configuration before each later rollout.
 To roll back after keys have been edited, restore the prior key configuration
 and the prior API/UI versions together. Older API versions do not understand
 `client-keys` and could otherwise disable authentication if no legacy keys remain.

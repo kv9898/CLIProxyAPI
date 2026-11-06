@@ -1,0 +1,42 @@
+name: ai-api
+services:
+  proxy:
+    image: ${CLI_PROXY_IMAGE:?Set the immutable paired image reference}
+    platform: linux/arm64
+    env_file: ./runtime/app.env
+    environment:
+      DEPLOY: cloud
+      TZ: Europe/London
+      GITSTORE_LOCAL_PATH: /var/lib/cliproxy
+      MANAGEMENT_STATIC_PATH: /CLIProxyAPI/static
+    volumes:
+      - ./runtime/state:/var/lib/cliproxy
+      - ./runtime/logs:/CLIProxyAPI/logs
+    ports:
+      - 127.0.0.1:8317:8317
+    restart: unless-stopped
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  caddy:
+    image: ${CADDY_IMAGE:?Set the immutable Caddy image reference}
+    platform: linux/arm64
+    depends_on:
+      - proxy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./runtime/certs:/certs:ro
+      - ./runtime/caddy-data:/data
+      - ./runtime/caddy-config:/config
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

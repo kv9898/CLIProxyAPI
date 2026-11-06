@@ -1,0 +1,7 @@
+[Unit]
+Description=Check AI-API every five minutes
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=5m
+[Install]
+WantedBy=timers.target

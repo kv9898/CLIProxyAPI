@@ -34,7 +34,9 @@ reboots during maintenance; automatic reboot is not enabled.
 Copy this directory to `/opt/ai-api`. Use root ownership and mode 0700 for
 `runtime/`, its subdirectories and `/opt/ai-api` itself. Copy `.env.example` to
 `.env`, and `app.env.example` to `runtime/app.env`; set both to root-owned mode
-0600. Use literal environment values, not shell commands. Pin the proxy and the
+0600. `release.env` contains the published, tested release pins and can be copied
+to `.env` instead of the template. Use literal environment values, not shell
+commands. Pin the proxy and the
 official Caddy image to verified Arm-capable digests. Do not print `docker compose
 config` without `--quiet`, since its expanded output includes secrets.
 

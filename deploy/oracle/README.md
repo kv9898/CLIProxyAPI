@@ -108,6 +108,12 @@ only after checking backups and rollback readiness. Its 5 GB bandwidth history
 makes it an emergency rollback, not the long-term destination. Token counters are
 process-local and reset on restart; migrating hosts does not make them persistent.
 
+The upstream Git store intentionally squashes each save into a single snapshot
+commit. A later save therefore does not fast-forward a previous checkout. Keep
+historical recovery points in the encrypted backups; use `git fetch` and inspect
+the remote snapshot when validating persistence rather than expecting `git pull
+--ff-only` to succeed.
+
 ## Monitoring and off-VM backups
 
 Install `systemd/ai-api-check.*` in `/etc/systemd/system`, then enable

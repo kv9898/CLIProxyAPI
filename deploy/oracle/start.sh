@@ -27,7 +27,7 @@ private_key=$(openssl pkey -in runtime/certs/origin.key -pubout -outform DER | s
 [[ $cert_key == "$private_key" ]] || { echo 'Certificate/key mismatch.' >&2; exit 1; }
 docker compose config --quiet
 docker compose pull
-docker compose run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile
+docker compose run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile
 docker compose up -d --wait --wait-timeout 120
 # Do not set timeouts on model inference streams; this is a readiness probe only.
 for _attempt in {1..30}; do

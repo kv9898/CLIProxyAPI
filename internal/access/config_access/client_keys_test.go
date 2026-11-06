@@ -2,8 +2,8 @@ package configaccess
 
 import (
 	"context"
-	"github.com/router-for-me/CLIProxyAPI/v7/internal/clientkeys"
-	sdkaccess "github.com/router-for-me/CLIProxyAPI/v7/sdk/access"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/clientkeys"
+	sdkaccess "github.com/router-for-me/CLIProxyAPI/v8/sdk/access"
 	"net/http/httptest"
 	"testing"
 )

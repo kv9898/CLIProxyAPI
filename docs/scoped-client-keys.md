@@ -1,6 +1,7 @@
 # Scoped client keys in this fork
 
-This fork adds account-scoped client keys to upstream CLIProxyAPI v7.2.158.
+This fork adds account-scoped client keys to upstream CLIProxyAPI v8.0.58
+(upstream main at `e5e6ad1e`).
 The upstream repository remains `router-for-me/CLIProxyAPI`. Merge upstream
 releases into this fork, run the isolation tests, and publish a new versioned
 image with the **Scoped proxy image** workflow. Deploy a pinned image digest.
@@ -41,6 +42,10 @@ realtime and Amp endpoints. Management authentication is separate; scoped keys
 never grant management access. Built-in tools within a Responses request use
 the selected account. Trusted server plugins are disabled in this deployment;
 re-audit the scope before enabling plugins that replace routing or execution.
+
+In v8 YAML these mappings live under `access.scoped-api-keys` and
+`access.client-keys`; legacy root mappings still load. Saving or migrating a v8
+configuration preserves these policies, including empty deny-all selections.
 
 ## Verification
 

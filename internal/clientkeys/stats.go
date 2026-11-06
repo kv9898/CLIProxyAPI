@@ -4,9 +4,10 @@ package clientkeys
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	coreusage "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/usage"
 	"sync"
 	"time"
+
+	coreusage "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
 )
 
 func ID(key string) string { sum := sha256.Sum256([]byte(key)); return hex.EncodeToString(sum[:]) }

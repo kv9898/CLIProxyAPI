@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/router-for-me/CLIProxyAPI/v7/internal/clientkeys"
-	"github.com/router-for-me/CLIProxyAPI/v7/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/clientkeys"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
 type clientKeyView struct {

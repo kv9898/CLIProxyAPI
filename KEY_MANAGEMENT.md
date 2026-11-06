@@ -36,6 +36,11 @@ New secrets are generated in the UI,
 must be copied before saving, and cannot be retrieved. The last key cannot be
 deleted through this API, because empty legacy authentication means public access.
 
+On v8, the YAML location is `access.client-keys`; `access.scoped-api-keys`
+holds legacy account-scoped keys. Legacy root locations remain readable and
+are migrated when saving a v8 document. The pinned custom UI continues to use
+the compatible v0 management API.
+
 ## Management API
 
 All routes require the existing management credential, not a client API key.
@@ -67,7 +72,7 @@ limits, persistent statistics, or Codex `/status` budget integration.
 
 1. Run backend tests and build; build the matching UI using `bun run verify`.
 2. Build with the maintained `Scoped proxy image` workflow (default version
-   `7.2.158-keys.1`). It checks out a pinned UI commit, verifies/builds it, and
+   `8.0.58-keys.1`). It checks out a pinned UI commit, verifies/builds it, and
    publishes paired new and rollback images using `Dockerfile.panel`.
 3. When deployment is approved, set the saved configuration's
    `remote-management.disable-auto-update-panel: true`, then deploy the paired

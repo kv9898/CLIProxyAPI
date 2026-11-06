@@ -2,8 +2,9 @@ package auth
 
 import (
 	"context"
-	executor "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/executor"
 	"testing"
+
+	executor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
 func TestClientKeyAllowlistEligibility(t *testing.T) {

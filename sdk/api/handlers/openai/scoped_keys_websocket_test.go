@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MoeForge/moego/ojson"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/router-for-me/CLIProxyAPI/v7/internal/registry"
-	sdkaccess "github.com/router-for-me/CLIProxyAPI/v7/sdk/access"
-	"github.com/router-for-me/CLIProxyAPI/v7/sdk/api/handlers"
-	coreauth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
-	sdkconfig "github.com/router-for-me/CLIProxyAPI/v7/sdk/config"
-	"github.com/tidwall/gjson"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
+	sdkaccess "github.com/router-for-me/CLIProxyAPI/v8/sdk/access"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/api/handlers"
+	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
+	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
 func TestScopedKeyWebsocketCannotSwitchAccounts(t *testing.T) {
@@ -70,7 +70,7 @@ func testKeyWebsocketIsolation(t *testing.T, metadata map[string]string) {
 			if err != nil {
 				t.Fatalf("model %s: %v; codex=%v deepseek=%v old=%v", model, err, codex.AuthIDs(), ds.AuthIDs(), old.AuthIDs())
 			}
-			kind := gjson.GetBytes(payload, "type").String()
+			kind := ojson.GetBytesNoCopy(payload, "type").String()
 			if model == "ws-school-model" && kind != wsEventTypeCompleted {
 				t.Fatalf("school request failed: %s", payload)
 			}

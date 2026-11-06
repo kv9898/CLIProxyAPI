@@ -7,7 +7,7 @@ name="ai-api-smoke-$$"
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
 docker run -d --name "$name" -p 127.0.0.1::8317 \
   -v "$here/synthetic.yaml:/run/synthetic.yaml:ro" \
-  "$image" --config /run/synthetic.yaml >/dev/null
+  "$image" /CLIProxyAPI/CLIProxyAPI --config /run/synthetic.yaml >/dev/null
 address=$(docker port "$name" 8317/tcp)
 url="http://$address"
 ready=false
